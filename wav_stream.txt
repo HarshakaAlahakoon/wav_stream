@@ -1,0 +1,1 @@
+./Debug/stream.c.o ./Debug/erl_comm.c.o ./Debug/main.c.o ./Debug/thread_handler.c.o
