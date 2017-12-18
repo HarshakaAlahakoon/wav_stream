@@ -18,6 +18,9 @@ int main(int argc, char **argv){
 	strcpy(cmdSendBuffer,"start");
 	//write_cmd(cmdSendBuffer, strlen(cmdSendBuffer));
 	
+	//struct rtp_conn *rtpConn;
+	//rtpConn = (struct rtp_conn *)malloc(sizeof(struct rtp_conn));
+	
 	FILE *file_pointer;
 	char file_name[] = "/home/aryan/Desktop/tmp/test.wav";
 	file_pointer = fopen(file_name, "rb");
@@ -36,7 +39,7 @@ int main(int argc, char **argv){
 	threads->next = NULL;
 	threads->status = 1;
 	threads->threadNumber = 1;
-//	pthread_create(&(threads->tid), NULL, thread_handler, threads);
+	pthread_create(&(threads->tid), NULL, thread_handler, threads);
 	while (read_cmd(cmdReadBuffer) > 0) {
 		cmdSendBuffer = realloc(cmdSendBuffer, strlen("received")+1);
 		strcpy(cmdSendBuffer,"received");
@@ -49,7 +52,6 @@ int main(int argc, char **argv){
 			cmdSendBuffer = realloc(cmdSendBuffer, strlen("new thread")+1);
 			strcpy(cmdSendBuffer,"new thread");
 			write_cmd(cmdSendBuffer, strlen(cmdSendBuffer));
-			//pthread_create((pthread_t *)malloc(sizeof(pthread_t)), NULL, handle_req, NULL);
 			current = get_last_threadInfo(threads);
 			cmdSendBuffer = realloc(cmdSendBuffer, sizeof(current));
 			strcpy(cmdSendBuffer,current);
@@ -60,9 +62,11 @@ int main(int argc, char **argv){
 			(current->next)->status = 1;
 			(current->next)->threadNumber = (current->threadNumber) + 1;
 			(current->next)->wav = malloc(sz);
+			(current->next)->rtpConn = (struct rtp_conn *)malloc(sizeof(struct rtp_conn));
+			decode_cmd(cmdReadBuffer, (current->next)->rtpConn);
 			memcpy((current->next)->wav, wavFile, sz);
 			//pthread_create(&((current->next)->tid), NULL, handle_req, current->next);
-			pthread_create((pthread_t *)malloc(sizeof(pthread_t)), NULL, handle_req, current->next);
+			pthread_create(&(current->next)->tid, NULL, handle_req, current->next);
 			cmdSendBuffer = realloc(cmdSendBuffer, strlen("thread created")+1);
 			strcpy(cmdSendBuffer,"thread created");
 			write_cmd(cmdSendBuffer, strlen(cmdSendBuffer));
@@ -80,7 +84,9 @@ short handle_req(struct thread_info *threadInfo){
 	write_cmd(cmdSendBuffer, strlen(cmdSendBuffer));
 	struct sockaddr_in si_me, si_other;
 	int udpSocket;
-	if (createSocket(&udpSocket, &si_me, &si_other) == -1){
+	//(threadInfo->rtpConn)->ip
+	//(threadInfo->rtpConn)->port
+	if (createSocket(&udpSocket, &si_me, &si_other, threadInfo->rtpConn) == -1){
 		//cmdSendBuffer = (unsigned char  *)malloc(strlen("se1")+1);
 		cmdSendBuffer = realloc(cmdSendBuffer, strlen("se1")+1);
 		strcpy(cmdSendBuffer, "se1");
@@ -107,7 +113,7 @@ short handle_req(struct thread_info *threadInfo){
 		write_cmd(cmdSendBuffer, strlen(cmdSendBuffer));
 	}
 	//free(cmdSendBuffer);
-	//threadInfo->status = 0;
+	threadInfo->status = 0;
 	close(udpSocket);
 	return 0;
 }

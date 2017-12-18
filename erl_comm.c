@@ -58,10 +58,10 @@ int write_cmd(byte *buf, int len){
 
 int decode_cmd(unsigned char *readBuffer, struct rtp_conn *rtpConn){
 	if(strstr(readBuffer, "sendwav") != NULL){
-		
 		int length = strlen(readBuffer+9) + 1;
 		rtpConn->ip = (unsigned char *)malloc(length);
-		strcpy(rtpConn->ip, readBuffer+7);
+		memcpy(&(rtpConn->port), readBuffer+7, 2);
+		strcpy(rtpConn->ip, readBuffer+9);
 		//memcpy(rtpConn->ip, readBuffer+7, strlen(readBuffer+7)+1);
 		return 0;
 	}else{

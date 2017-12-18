@@ -79,7 +79,7 @@ int stream(int udpSocket, struct sockaddr_in *si_other, unsigned char *wav){
 
 
 // TODO:: here..pass by value/reference?
-int createSocket(int *udpSocket, struct sockaddr_in *si_me, struct sockaddr_in *si_other){
+int createSocket(int *udpSocket, struct sockaddr_in *si_me, struct sockaddr_in *si_other, struct rtp_conn *rtpConn){
 	*udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (*udpSocket == -1){
 		return -1;
@@ -93,8 +93,10 @@ int createSocket(int *udpSocket, struct sockaddr_in *si_me, struct sockaddr_in *
     si_me->sin_addr.s_addr = htonl(INADDR_ANY);
 	
 	si_other->sin_family = AF_INET;
-	si_other->sin_port = htons(5062);
-	si_other->sin_addr.s_addr = inet_addr("192.168.8.101");
+	//si_other->sin_port = htons(5062);
+	si_other->sin_port = rtpConn->port;
+	//si_other->sin_addr.s_addr = inet_addr("192.168.8.101");
+	si_other->sin_addr.s_addr = inet_addr((const char *)(rtpConn->ip));
 	memset(si_other->sin_zero, '\0', sizeof (si_other->sin_zero)); 
     //bind socket to port
     //if( bind(*udpSocket, (struct sockaddr*)si_me, sizeof(*si_me) ) == -1){
