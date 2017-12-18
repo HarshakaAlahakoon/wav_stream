@@ -24,6 +24,9 @@ void thread_handler(struct thread_info *threadInfo){
 				current->next = NULL;
 				current->prev = NULL;
 				// TODO:: free all the memory
+				free(current->wav);
+				free((current->rtpConn)->ip);
+				free(current->rtpConn);
 				free(current);
 				current = tmp;
 			}else{
