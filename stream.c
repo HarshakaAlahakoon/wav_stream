@@ -8,14 +8,15 @@
 
 //#define PAYLOAD_SIZE 160
 
-FILE *file_pointer;
-char file_name[] = "/home/aryan/Desktop/tmp/test.wav";
-
-
-
 struct timespec req = {0};
 
-int stream(int udpSocket, struct sockaddr_in *si_other){
+int stream(int udpSocket, struct sockaddr_in *si_other, unsigned char *wav){
+	
+	//FILE *file_pointer;
+	//char file_name[] = "/home/aryan/Desktop/tmp/test.wav";
+	long fileOffset = 0;
+	long fileSize = malloc_usable_size(wav);
+	char play;
 	
 	unsigned char headerPart_11 = 128;	//V,P,X,CC
 	unsigned char headerPart_12 = 8;	//M,PT
@@ -26,16 +27,16 @@ int stream(int udpSocket, struct sockaddr_in *si_other){
 	unsigned int ssrc;
 	unsigned char rtpPacket[172];
 	unsigned int increment;
-	unsigned int readBytes;
+	//unsigned int readBytes;
 	int milisec = 20; // length of time to sleep, in miliseconds
 	
 	req.tv_sec = 0;
 	req.tv_nsec = milisec * 1000000L;
 	ssrc = htonl((unsigned int)time(NULL));
 
-	if((file_pointer = fopen(file_name, "rb")) == NULL){
-		return -1;
-	}
+	//if((file_pointer = fopen(file_name, "rb")) == NULL){
+	//	return -1;
+	//}
 	
 	do{
 		increment = 0;
@@ -53,14 +54,26 @@ int stream(int udpSocket, struct sockaddr_in *si_other){
 		increment += sizeof(timestampNBO);
 		memcpy(rtpPacket+increment, &ssrc, sizeof(ssrc));
 		increment += sizeof(ssrc);
-		readBytes = fread(rtpPacket+increment, 1, PAYLOAD_SIZE, file_pointer);	//start : byte_13
+		//readBytes = fread(rtpPacket+increment, 1, PAYLOAD_SIZE, file_pointer);	//start : byte_13
 		//printf("\npacket size : %i", sizeof(rtpPacket));
+		
+		if((fileSize-fileOffset-1) > PAYLOAD_SIZE){
+			memcpy(rtpPacket+increment, wav+fileOffset, PAYLOAD_SIZE);
+			fileOffset += PAYLOAD_SIZE;
+			play = 1;
+		}else{
+			memcpy(rtpPacket+increment, wav+fileOffset, fileSize-fileOffset-1);
+			//fileOffset += PAYLOAD_SIZE;
+			play = 0;
+		}
+		
 		if (sendto(udpSocket, rtpPacket, 172, 0, (struct sockaddr*) si_other, sizeof(*si_other)) == -1){
             return -1;
 		}
 		nanosleep(&req, (struct timespec *)NULL);
-	}while(readBytes==PAYLOAD_SIZE);
-	fclose(file_pointer);
+	//}while(readBytes==PAYLOAD_SIZE);
+	}while(play);
+	//fclose(file_pointer);
 	return 0;
 }
 
@@ -80,8 +93,8 @@ int createSocket(int *udpSocket, struct sockaddr_in *si_me, struct sockaddr_in *
     si_me->sin_addr.s_addr = htonl(INADDR_ANY);
 	
 	si_other->sin_family = AF_INET;
-	si_other->sin_port = htons(9000);
-	si_other->sin_addr.s_addr = inet_addr("192.168.8.100");
+	si_other->sin_port = htons(5062);
+	si_other->sin_addr.s_addr = inet_addr("192.168.8.101");
 	memset(si_other->sin_zero, '\0', sizeof (si_other->sin_zero)); 
     //bind socket to port
     //if( bind(*udpSocket, (struct sockaddr*)si_me, sizeof(*si_me) ) == -1){

@@ -18,6 +18,17 @@ int main(int argc, char **argv){
 	strcpy(cmdSendBuffer,"start");
 	//write_cmd(cmdSendBuffer, strlen(cmdSendBuffer));
 	
+	FILE *file_pointer;
+	char file_name[] = "/home/aryan/Desktop/tmp/test.wav";
+	file_pointer = fopen(file_name, "rb");
+	fseek(file_pointer, 0L, SEEK_END);
+	long sz = ftell(file_pointer);
+	rewind(file_pointer);
+	//printf("\size : %d\n", sz);
+	unsigned char *wavFile = (unsigned char *)malloc(sz);
+	fread(wavFile, 1, sz, file_pointer);
+	fclose(file_pointer);
+	
 	struct thread_info *threads;
 	struct thread_info *current;
 	threads = (struct thread_info *)malloc(sizeof(struct thread_info));
@@ -48,6 +59,8 @@ int main(int argc, char **argv){
 			(current->next)->next = NULL;
 			(current->next)->status = 1;
 			(current->next)->threadNumber = (current->threadNumber) + 1;
+			(current->next)->wav = malloc(sz);
+			memcpy((current->next)->wav, wavFile, sz);
 			//pthread_create(&((current->next)->tid), NULL, handle_req, current->next);
 			pthread_create((pthread_t *)malloc(sizeof(pthread_t)), NULL, handle_req, current->next);
 			cmdSendBuffer = realloc(cmdSendBuffer, strlen("thread created")+1);
@@ -83,7 +96,7 @@ short handle_req(struct thread_info *threadInfo){
 	cmdSendBuffer = realloc(cmdSendBuffer, strlen("stream starting...")+1);
 	strcpy(cmdSendBuffer, "stream starting...");
 	write_cmd(cmdSendBuffer, strlen(cmdSendBuffer));
-	if(stream(udpSocket, &si_other) == -1){
+	if(stream(udpSocket, &si_other, threadInfo->wav) == -1){
 		cmdSendBuffer = realloc(cmdSendBuffer, strlen("stream error")+1);
 		strcpy(cmdSendBuffer, "stream error");
 		write_cmd(cmdSendBuffer, strlen(cmdSendBuffer));
@@ -109,4 +122,5 @@ struct thread_info *get_last_threadInfo(struct thread_info *threads){
 			current = current->next;
 		}
 	}while(current->next != NULL);
+	return current;
 }
